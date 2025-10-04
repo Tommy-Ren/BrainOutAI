@@ -1,0 +1,435 @@
+/* Reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  background-color: #0f0f0f;
+  color: #ffffff;
+  line-height: 1.6;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+}
+
+.chat-container {
+  width: 100%;
+  max-width: 800px;
+  height: 90vh;
+  background: #1a1a1a;
+  border-radius: 12px;
+  border: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.chat-header {
+  padding: 20px;
+  background: #2a2a2a;
+  border-bottom: 1px solid #333;
+  text-align: center;
+}
+
+.chat-header h1 {
+  font-size: 2rem;
+  margin-bottom: 5px;
+  background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient 3s ease infinite;
+}
+
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.chat-header p {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.messages-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.messages-container::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+.messages-container::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 3px;
+}
+
+.welcome-message {
+  text-align: center;
+  padding: 40px 20px;
+  color: #ccc;
+}
+
+.welcome-message h2 {
+  margin-bottom: 15px;
+  color: #fff;
+}
+
+.example-questions {
+  margin-top: 30px;
+  text-align: left;
+  max-width: 300px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.example-questions ul {
+  list-style: none;
+  margin-top: 10px;
+}
+
+.example-questions li {
+  padding: 8px 0;
+  color: #888;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.example-questions li:hover {
+  color: #4ecdc4;
+}
+
+.message {
+  display: flex;
+  margin-bottom: 15px;
+}
+
+.message.user {
+  justify-content: flex-end;
+}
+
+.message.ai {
+  justify-content: flex-start;
+}
+
+.message-content {
+  max-width: 80%;
+  position: relative;
+}
+
+.message.user .message-content {
+  background: #4ecdc4;
+  color: #000;
+  padding: 12px 16px;
+  border-radius: 18px 18px 4px 18px;
+  font-weight: 500;
+}
+
+.message.ai .message-content {
+  background: #2a2a2a;
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 18px 18px 18px 4px;
+  border: 1px solid #333;
+}
+
+.message-text {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.copy-btn {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #444;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+  font-size: 12px;
+}
+
+.message.ai:hover .copy-btn {
+  opacity: 1;
+}
+
+.copy-btn:hover {
+  background: #555;
+}
+
+.thinking-animation {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #888;
+  font-style: italic;
+}
+
+.dots {
+  display: flex;
+  gap: 2px;
+}
+
+.dots span {
+  animation: bounce 1.4s infinite ease-in-out;
+}
+
+.dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes bounce {
+
+  0%,
+  80%,
+  100% {
+    transform: scale(0);
+  }
+
+  40% {
+    transform: scale(1);
+  }
+}
+
+.input-container {
+  padding: 20px;
+  background: #2a2a2a;
+  border-top: 1px solid #333;
+}
+
+.make-harder-btn {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  background: linear-gradient(45deg, #ff6b6b, #ff8e53);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.make-harder-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+}
+
+.input-box {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.input-box textarea {
+  flex: 1;
+  background: #1a1a1a;
+  border: 1px solid #444;
+  border-radius: 12px;
+  padding: 12px 16px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  resize: none;
+  min-height: 44px;
+  max-height: 120px;
+  transition: border-color 0.2s;
+}
+
+.input-box textarea:focus {
+  outline: none;
+  border-color: #4ecdc4;
+}
+
+.input-box textarea::placeholder {
+  color: #666;
+}
+
+.send-btn {
+  background: #4ecdc4;
+  color: #000;
+  border: none;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  font-size: 18px;
+  transition: background-color 0.2s, transform 0.2s;
+  flex-shrink: 0;
+}
+
+.send-btn:hover:not(:disabled) {
+  background: #45b7d1;
+  transform: scale(1.05);
+}
+
+.send-btn:disabled {
+  background: #333;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Meme Popup Styles */
+.meme-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.meme-popup {
+  background: #2a2a2a;
+  border-radius: 16px;
+  border: 1px solid #444;
+  max-width: 500px;
+  width: 90%;
+  animation: slideIn 0.3s ease;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.meme-content {
+  padding: 30px;
+  text-align: center;
+}
+
+.meme-content h2 {
+  margin-bottom: 20px;
+  background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.meme-text {
+  font-size: 1.1rem;
+  margin-bottom: 15px;
+  color: #fff;
+  line-height: 1.5;
+  padding: 20px;
+  background: #1a1a1a;
+  border-radius: 12px;
+  border-left: 4px solid #4ecdc4;
+}
+
+.meme-subtitle {
+  color: #ccc;
+  margin-bottom: 25px;
+  font-style: italic;
+}
+
+.meme-close-btn {
+  background: linear-gradient(45deg, #4ecdc4, #45b7d1);
+  color: #000;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 25px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.meme-close-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(76, 205, 196, 0.3);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .app {
+    padding: 10px;
+  }
+
+  .chat-container {
+    height: 95vh;
+    border-radius: 8px;
+  }
+
+  .chat-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .messages-container {
+    padding: 15px;
+  }
+
+  .message-content {
+    max-width: 90%;
+  }
+
+  .input-container {
+    padding: 15px;
+  }
+
+  .meme-popup {
+    margin: 20px;
+  }
+
+  .meme-content {
+    padding: 20px;
+  }
+}
