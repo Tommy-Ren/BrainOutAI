@@ -14,9 +14,9 @@ interface MemePopupProps {
 
 const MemePopup: React.FC<MemePopupProps> = ({ onClose }) => {
   const memes = [
-    "🧠 When someone asks 'What's 2+2?' and you start explaining quantum superposition...",
-    "🤓 Me: *turns simple addition into a 47-step proof involving thermodynamics*",
-    "📚 BrainOutAI: Making rocket science out of making toast since 2024",
+    "🧠 When someone asks 'What's 1+1?', you know the answer is simple but can't prove...",
+    "🤓 Me: *turns simple addition into a 7*7=49-step proof involving thermodynamics*",
+    "📚 BrainOutAI: Making rocket science out of making toast",
     "🔬 'How do I tie my shoes?' - *proceeds to explain the molecular structure of shoelaces*",
     "⚡ Warning: May cause excessive use of words like 'furthermore' and 'heretofore'",
     "🎯 BrainOutAI: Where asking for the time gets you a lecture on relativity"
@@ -50,13 +50,9 @@ function App() {
   const [lastResponse, setLastResponse] = useState<{ question: string, response: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Show meme popup on first visit
+  // Show meme popup when visit
   useEffect(() => {
-    const hasVisited = localStorage.getItem('brainoutai-visited');
-    if (!hasVisited) {
-      setShowMemePopup(true);
-      localStorage.setItem('brainoutai-visited', 'true');
-    }
+    setShowMemePopup(true);
   }, []);
 
   // Auto-scroll to bottom when new messages arrive
@@ -107,7 +103,7 @@ function App() {
       console.error('Error sending message:', error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: "I apologize, but I'm currently experiencing a quantum entanglement disruption in my neural pathways. Please ensure your Gemini API key is properly configured and try again.",
+        text: "I apologize, that's beyond my current scope. Let's talk about something else.",
         isUser: false,
         timestamp: new Date().toISOString()
       };
@@ -175,18 +171,18 @@ function App() {
       <div className="chat-container">
         <div className="chat-header">
           <h1>🧠 BrainOutAI</h1>
-          <p>Making simple questions unnecessarily complicated since 2024</p>
+          <p>Making simple questions unnecessarily complicated</p>
         </div>
 
         <div className="messages-container">
           {messages.length === 0 && (
             <div className="welcome-message">
               <h2>Welcome to BrainOutAI! 🚀</h2>
-              <p>Ask me anything, and I'll give you the most over-engineered answer possible.</p>
+              <p>Ask me anything, and I'll give you the most complicated answer possible.</p>
               <div className="example-questions">
                 <p>Try asking:</p>
                 <ul>
-                  <li>"What's 2 + 2?"</li>
+                  <li>"What's 1 + 1?"</li>
                   <li>"How do I make coffee?"</li>
                   <li>"What time is it?"</li>
                   <li>"How do I tie my shoes?"</li>
