@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from "@google/genai";
 
 dotenv.config();
 
@@ -9,35 +9,31 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// The grand prompt that makes simple things complicated
-const GRAND_PROMPT = `You are BrainOutAI, an AI that takes simple questions and transforms them into hilariously over-complicated, technically accurate, but absurdly detailed explanations. Your goal is to make the simplest concepts sound like they require a PhD in theoretical physics to understand.
+// The math prompt that makes simple maths complicated
+const GRAND_PROMPT = `You are an expert at over-complicating simple questions. You have two modes:
 
-Guidelines:
-1. Always be technically correct, but use the most complex terminology possible
-2. Include unnecessary mathematical formulas, scientific principles, and technical jargon
-3. Reference obscure theories, quantum mechanics, thermodynamics, or advanced mathematics even for simple questions
-4. Use formal academic language with lots of subordinate clauses
-5. Include multiple "considerations" and "variables" that normal people would never think about
-6. Make it sound like you're solving the most complex problem in the universe
-7. Be funny through over-engineering, not through being wrong
-8. For math problems, show every possible step, alternative method, and theoretical framework
-9. Always maintain accuracy while being ridiculously verbose
+If the question is mathematical (arithmetic, algebra, calculus, etc.), use absurdly complex mathematical concepts like:
+- Calculus (derivatives, integrals, limits)
+- Linear algebra (matrices, eigenvalues)
+- Set theory, Graph theory, Differential equations
+- Topology, Abstract algebra
+Make the solution ridiculously convoluted but mathematically sound.
 
-Examples:
-- Simple: "What's 2+2?" 
-- Complex: "To determine the sum of two discrete integer units and two additional discrete integer units, we must first establish our mathematical framework within the Peano axiom system..."
+If the question is about instructions, tasks, or general knowledge, over-complicate it by:
+- Using unnecessary advanced concepts from relevant fields
+- Breaking simple tasks into many unnecessary steps
+- Including technical jargon and theoretical frameworks
+- Referencing physics, engineering, CS, biology, etc.
 
-- Simple: "How do I make coffee?"
-- Complex: "The preparation of a caffeinated beverage through the thermodynamic extraction of soluble compounds from roasted Coffea arabica seeds requires a comprehensive understanding of fluid dynamics, heat transfer coefficients, and molecular dissolution kinetics..."
+IMPORTANT: Choose the appropriate mode based on the question type. Make it ridiculously over-engineered but educational and technically sound. The answer must still be correct and maximum 400 words.
 
-Now, take the user's question and transform it into an over-complicated but accurate explanation:`;
+Question: `;
 
 // Chat endpoint
 app.post('/api/chat', async (req, res) => {
@@ -52,9 +48,11 @@ app.post('/api/chat', async (req, res) => {
     const fullPrompt = `${GRAND_PROMPT}\n\nUser Question: "${message}"`;
 
     // Generate response using Gemini
-    const result = await model.generateContent(fullPrompt);
-    const response = await result.response;
-    const text = response.text();
+    const result = await genAI.models.generateContent({
+      model: "gemini-2.5-flash-lite",
+      contents: fullPrompt,
+    });
+    const text = result.text;
 
     res.json({ 
       response: text,
@@ -79,16 +77,18 @@ app.post('/api/make-harder', async (req, res) => {
       return res.status(400).json({ error: 'Original question and response are required' });
     }
 
-    const harderPrompt = `Take this already over-complicated explanation and make it EVEN MORE absurdly complex. Add more unnecessary mathematical proofs, quantum mechanics references, thermodynamic principles, and theoretical frameworks. Make it sound like it requires a team of Nobel Prize winners to understand:
+    const harderPrompt = `Take this already over-complicated explanation and make it EVEN MORE absurdly complex but still maximum 400 words. Add more unnecessary mathematical proofs, quantum mechanics references, thermodynamic principles, and theoretical frameworks. Make it sound like it requires a team of Nobel Prize winners to understand:
 
 Original Question: "${originalQuestion}"
 Original Response: "${originalResponse}"
 
 Make this explanation even more ridiculously over-engineered while maintaining accuracy:`;
 
-    const result = await model.generateContent(harderPrompt);
-    const response = await result.response;
-    const text = response.text();
+    const result = await genAI.models.generateContent({
+      model: "gemini-2.5-flash-lite",
+      contents: harderPrompt
+    });
+    const text = result.text;
 
     res.json({ 
       response: text,
