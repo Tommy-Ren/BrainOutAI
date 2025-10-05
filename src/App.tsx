@@ -7,6 +7,15 @@ interface Message {
   isUser: boolean;
   timestamp: string;
   files?: File[];
+  reactions?: string[];
+  isCached?: boolean;
+}
+
+interface SessionData {
+  sessionId: string;
+  queryCount: number;
+  lastReset: number;
+  history: Message[];
 }
 
 interface MemePopupProps {
@@ -59,6 +68,14 @@ function App() {
   const [cursorTrails, setCursorTrails] = useState<Array<{ id: number, x: number, y: number }>>([]);
   const [dragActive, setDragActive] = useState<boolean>(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [sessionData, setSessionData] = useState<SessionData | null>(null);
+  const [showHistory, setShowHistory] = useState<boolean>(false);
+  const [isHistoryClosing, setIsHistoryClosing] = useState<boolean>(false);
+  const [isRateLimited, setIsRateLimited] = useState<boolean>(false);
+  const [expandedMessages, setExpandedMessages] = useState<Set<string>>(new Set());
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [dragStartY, setDragStartY] = useState<number>(0);
+  const [panelOffset, setPanelOffset] = useState<number>(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const trailIdRef = useRef<number>(0);
   const dragTimeoutRef = useRef<number | null>(null);
@@ -94,6 +111,168 @@ function App() {
     const gradientOptions = darkMode ? darkGradients : lightGradients;
     const randomIndex = Math.floor(Math.random() * gradientOptions.length);
     return gradientOptions[randomIndex];
+  };
+
+  // Session management constants
+  const RATE_LIMIT = 10; // queries per hour
+  const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour in milliseconds
+
+  // Initialize or get session data
+  const initializeSession = (): SessionData => {
+    const stored = localStorage.getItem('brainoutai-session');
+    const now = Date.now();
+
+    if (stored) {
+      const session: SessionData = JSON.parse(stored);
+      // Reset count if window has passed
+      if (now - session.lastReset > RATE_LIMIT_WINDOW) {
+        session.queryCount = 0;
+        session.lastReset = now;
+      }
+      return session;
+    }
+
+    // Create new session
+    const newSession: SessionData = {
+      sessionId: `session_${now}_${Math.random().toString(36).substring(2, 11)}`,
+      queryCount: 0,
+      lastReset: now,
+      history: []
+    };
+
+    localStorage.setItem('brainoutai-session', JSON.stringify(newSession));
+    return newSession;
+  };
+
+  // Check if user can make a query
+  const canMakeQuery = (session: SessionData): boolean => {
+    return session.queryCount < RATE_LIMIT;
+  };
+
+  // Get cached/fallback response
+  const getFallbackResponse = (question: string): string => {
+    const fallbacks = [
+      `🤯 Server's having an existential crisis! But here's my cached wisdom: "${question}" requires a 47-dimensional analysis involving quantum mechanics, thermodynamics, and the philosophical implications of asking questions. The answer involves π, the speed of light, and probably some calculus. Trust me, it's complicated! 🧠`,
+      `😵 API quota exceeded! But fear not - through advanced mathematical modeling and theoretical frameworks, "${question}" can be solved using a combination of differential equations, statistical analysis, and a deep understanding of the universe's fundamental constants. The solution is both elegant and unnecessarily complex! 🚀`,
+      `🤖 Server busy mode activated! Your question "${question}" triggers a cascade of computational processes involving machine learning algorithms, neural networks, and quantum computing principles. The answer requires consideration of entropy, probability distributions, and the meaning of existence itself! 🔬`
+    ];
+
+    return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+  };
+
+  // Reaction functions
+  const addReaction = (messageId: string, reaction: string) => {
+    setMessages(prev => prev.map(msg => {
+      if (msg.id === messageId) {
+        const reactions = msg.reactions || [];
+        const hasReaction = reactions.includes(reaction);
+        return {
+          ...msg,
+          reactions: hasReaction
+            ? reactions.filter(r => r !== reaction)
+            : [...reactions, reaction]
+        };
+      }
+      return msg;
+    }));
+  };
+
+  // Share functions
+  const shareToTwitter = (text: string) => {
+    const tweetText = `Check out this hilariously over-complicated answer from BrainOutAI! 🧠\n\n"${text.substring(0, 200)}${text.length > 200 ? '...' : ''}"\n\n#BrainOutAI #AI #OverComplicated`;
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+    window.open(url, '_blank');
+  };
+
+  const shareToDiscord = (text: string) => {
+    // Copy to clipboard for Discord sharing
+    navigator.clipboard.writeText(`Check out this hilariously over-complicated answer from BrainOutAI! 🧠\n\n"${text}"\n\nTry it yourself at: ${window.location.href}`);
+    alert('Copied to clipboard! Paste it in Discord 📋');
+  };
+
+  const shareToReddit = (text: string) => {
+    const title = 'This AI makes simple questions unnecessarily complicated 🤯';
+    const redditText = `Check out this hilariously over-complicated answer from BrainOutAI!\n\n"${text}"\n\nTry it yourself at: ${window.location.href}`;
+    const url = `https://reddit.com/submit?title=${encodeURIComponent(title)}&text=${encodeURIComponent(redditText)}`;
+    window.open(url, '_blank');
+  };
+
+  // History panel functions
+  const toggleHistory = () => {
+    if (showHistory) {
+      closeHistory();
+    } else {
+      setShowHistory(true);
+      setIsHistoryClosing(false);
+    }
+  };
+
+  const closeHistory = () => {
+    setIsHistoryClosing(true);
+    setTimeout(() => {
+      setShowHistory(false);
+      setIsHistoryClosing(false);
+    }, 300); // Match animation duration
+  };
+
+  const toggleMessageExpansion = (messageId: string) => {
+    setExpandedMessages(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(messageId)) {
+        newSet.delete(messageId);
+      } else {
+        newSet.add(messageId);
+      }
+      return newSet;
+    });
+  };
+
+  // Drag handlers for history panel
+  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+    setIsDragging(true);
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    setDragStartY(clientY);
+    setPanelOffset(0);
+  };
+
+  const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDragging) return;
+
+    e.preventDefault();
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const deltaY = clientY - dragStartY;
+
+    // Only allow dragging down (positive deltaY)
+    if (deltaY > 0) {
+      setPanelOffset(deltaY);
+    }
+  };
+
+  const handleDragEnd = () => {
+    if (!isDragging) return;
+
+    setIsDragging(false);
+
+    // If dragged down more than 100px, close the panel
+    if (panelOffset > 100) {
+      closeHistory();
+    } else {
+      // Snap back to original position
+      setPanelOffset(0);
+    }
+  };
+
+  const clearHistory = () => {
+    setMessages([]);
+    setLastResponse(null);
+    if (sessionData) {
+      const clearedSession = {
+        ...sessionData,
+        history: []
+      };
+      setSessionData(clearedSession);
+      localStorage.setItem('brainoutai-session', JSON.stringify(clearedSession));
+    }
   };
 
   // Pool of example questions
@@ -168,8 +347,10 @@ function App() {
     setBackgroundGradient(generateRandomGradient(newMode));
   };
 
-  // Show meme popup on first visit only
+  // Initialize session and show meme popup on first visit only
   useEffect(() => {
+    const session = initializeSession();
+    setSessionData(session);
     setShowMemePopup(true);
   }, []);
 
@@ -182,6 +363,28 @@ function App() {
     };
   }, []);
 
+  // Add global event listeners for drag functionality
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => handleDragMove(e as any);
+    const handleMouseUp = () => handleDragEnd();
+    const handleTouchMove = (e: TouchEvent) => handleDragMove(e as any);
+    const handleTouchEnd = () => handleDragEnd();
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
+      document.addEventListener('touchend', handleTouchEnd);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [isDragging, dragStartY, panelOffset]);
+
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -189,6 +392,49 @@ function App() {
 
   const sendMessage = async () => {
     if ((!inputText.trim() && uploadedFiles.length === 0) || isLoading) return;
+
+    // Ensure session is initialized
+    const currentSession = sessionData || initializeSession();
+    if (!sessionData) {
+      setSessionData(currentSession);
+    }
+
+    // Check rate limiting
+    if (!canMakeQuery(currentSession)) {
+      setIsRateLimited(true);
+
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        text: inputText || (uploadedFiles.length > 0 ? `Uploaded ${uploadedFiles.length} file(s)` : ''),
+        isUser: true,
+        timestamp: new Date().toISOString(),
+        files: uploadedFiles.length > 0 ? [...uploadedFiles] : undefined
+      };
+
+      const fallbackResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        text: getFallbackResponse(userMessage.text),
+        isUser: false,
+        timestamp: new Date().toISOString(),
+        isCached: true
+      };
+
+      setMessages(prev => [...prev, userMessage, fallbackResponse]);
+      setInputText('');
+      setUploadedFiles([]);
+
+      // Update session data even for fallback responses
+      const updatedSession = {
+        ...currentSession,
+        queryCount: currentSession.queryCount + 1,
+        history: [...currentSession.history, userMessage, fallbackResponse]
+      };
+
+      setSessionData(updatedSession);
+      localStorage.setItem('brainoutai-session', JSON.stringify(updatedSession));
+
+      return;
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -245,6 +491,16 @@ function App() {
 
       setMessages(prev => [...prev, aiMessage]);
       setLastResponse({ question: inputText, response: data.response });
+
+      // Update session data - increment query count
+      const updatedSession = {
+        ...currentSession,
+        queryCount: currentSession.queryCount + 1,
+        history: [...currentSession.history, userMessage, aiMessage]
+      };
+
+      setSessionData(updatedSession);
+      localStorage.setItem('brainoutai-session', JSON.stringify(updatedSession));
 
     } catch (error) {
       console.error('Error sending message:', error);
@@ -481,8 +737,29 @@ function App() {
 
       <div className="chat-container">
         <div className="chat-header">
-          <h1>🧠 BrainOutAI</h1>
-          <p>Making simple questions unnecessarily complicated</p>
+          <div className="header-content">
+            <h1>🧠 BrainOutAI</h1>
+            <p>Making simple questions unnecessarily complicated</p>
+          </div>
+          <div className="header-controls">
+            <button
+              className="history-btn"
+              onClick={toggleHistory}
+              title="View conversation history"
+            >
+              📚 History
+            </button>
+            {sessionData && (
+              <div className="rate-limit-indicator">
+                <span className={sessionData.queryCount >= RATE_LIMIT ? 'limit-reached' : ''}>
+                  {sessionData.queryCount}/{RATE_LIMIT} queries
+                </span>
+                {sessionData.queryCount >= RATE_LIMIT && (
+                  <span className="limit-warning">⚠️ Rate limited</span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="messages-container">
@@ -531,13 +808,71 @@ function App() {
                 )}
                 <div className="message-text">{message.text}</div>
                 {!message.isUser && (
-                  <button
-                    className="copy-btn"
-                    onClick={() => copyToClipboard(message.text)}
-                    title="Copy to clipboard"
-                  >
-                    copy
-                  </button>
+                  <div className="message-actions">
+                    <button
+                      className="copy-btn"
+                      onClick={() => copyToClipboard(message.text)}
+                      title="Copy to clipboard"
+                    >
+                      copy
+                    </button>
+
+                    {/* Reaction buttons */}
+                    <div className="reaction-buttons">
+                      <button
+                        className={`reaction-btn ${message.reactions?.includes('😆') ? 'active' : ''}`}
+                        onClick={() => addReaction(message.id, '😆')}
+                        title="Funny"
+                      >
+                        😆 {message.reactions?.filter(r => r === '😆').length || ''}
+                      </button>
+                      <button
+                        className={`reaction-btn ${message.reactions?.includes('🤯') ? 'active' : ''}`}
+                        onClick={() => addReaction(message.id, '🤯')}
+                        title="Mind blown"
+                      >
+                        🤯 {message.reactions?.filter(r => r === '🤯').length || ''}
+                      </button>
+                      <button
+                        className={`reaction-btn ${message.reactions?.includes('🤔') ? 'active' : ''}`}
+                        onClick={() => addReaction(message.id, '🤔')}
+                        title="Thinking"
+                      >
+                        🤔 {message.reactions?.filter(r => r === '🤔').length || ''}
+                      </button>
+                    </div>
+
+                    {/* Share buttons */}
+                    <div className="share-buttons">
+                      <button
+                        className="share-btn facebook"
+                        onClick={() => shareToTwitter(message.text)}
+                        title="Share to Facebook"
+                      >
+                        <img src="/icons/facebook.svg" alt="Facebook" className="share-icon" />
+                      </button>
+                      <button
+                        className="share-btn discord"
+                        onClick={() => shareToDiscord(message.text)}
+                        title="Share to Discord"
+                      >
+                        <img src="/icons/discord.svg" alt="Discord" className="share-icon" />
+                      </button>
+                      <button
+                        className="share-btn reddit"
+                        onClick={() => shareToReddit(message.text)}
+                        title="Share to Reddit"
+                      >
+                        <img src="/icons/reddit.svg" alt="Reddit" className="share-icon" />
+                      </button>
+                    </div>
+
+                    {message.isCached && (
+                      <span className="cached-indicator" title="Cached response due to rate limiting">
+                        📦 Cached
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -561,6 +896,77 @@ function App() {
 
           <div ref={messagesEndRef} />
         </div>
+
+        {/* History Panel */}
+        {showHistory && sessionData && (
+          <div
+            className={`history-panel ${isHistoryClosing ? 'closing' : ''} ${isDragging ? 'dragging' : ''}`}
+            style={{
+              transform: `translateX(-50%) translateY(${panelOffset}px)`,
+              transition: isDragging ? 'none' : 'transform 0.3s ease-out'
+            }}
+          >
+            <div
+              className="history-header"
+              onMouseDown={handleDragStart}
+              onTouchStart={handleDragStart}
+            >
+              <div className="drag-handle">
+                <div className="drag-indicator"></div>
+              </div>
+              <div className="history-header-content">
+                <h3>📚 Conversation History</h3>
+                <div className="history-controls">
+                  <button onClick={clearHistory} className="clear-history-btn">
+                    🗑️ Clear
+                  </button>
+                  <button onClick={closeHistory} className="close-history-btn">
+                    ✕
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="history-content">
+              {messages.length === 0 ? (
+                <p className="no-history">No conversation history yet. Start chatting to see your history here!</p>
+              ) : (
+                <div className="history-messages">
+                  {messages.map((msg, index) => {
+                    const isExpanded = expandedMessages.has(msg.id);
+                    const shouldTruncate = msg.text.length > 150;
+                    const displayText = shouldTruncate && !isExpanded
+                      ? `${msg.text.substring(0, 150)}...`
+                      : msg.text;
+
+                    return (
+                      <div key={`history-${index}`} className={`history-message ${msg.isUser ? 'user' : 'ai'}`}>
+                        <div className="history-message-content">
+                          <span className="history-timestamp">
+                            {new Date(msg.timestamp).toLocaleTimeString()}
+                          </span>
+                          <div className="history-text">
+                            {displayText}
+                          </div>
+                          {shouldTruncate && (
+                            <button
+                              className="expand-btn"
+                              onClick={() => toggleMessageExpansion(msg.id)}
+                            >
+                              {isExpanded ? '📄 Show Less' : '📖 Show More'}
+                            </button>
+                          )}
+                          {msg.isCached && (
+                            <span className="history-cached">📦 Cached</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         <div
           className="input-container"
