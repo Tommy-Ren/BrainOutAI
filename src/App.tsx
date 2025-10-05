@@ -61,6 +61,7 @@ function App() {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const trailIdRef = useRef<number>(0);
+  const dragCounterRef = useRef<number>(0);
 
   // Generate random gradient function
   const generateRandomGradient = (darkMode: boolean = true) => {
@@ -361,14 +362,17 @@ function App() {
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setDragActive(true);
+    dragCounterRef.current++;
+    if (dragCounterRef.current === 1) {
+      setDragActive(true);
+    }
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    // Only set dragActive to false if we're leaving the main container
-    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+    dragCounterRef.current--;
+    if (dragCounterRef.current === 0) {
       setDragActive(false);
     }
   };
@@ -381,6 +385,7 @@ function App() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    dragCounterRef.current = 0;
     setDragActive(false);
 
     const files = Array.from(e.dataTransfer.files);
@@ -480,13 +485,18 @@ function App() {
                 {message.files && message.files.length > 0 && (
                   <div className="message-files">
                     {message.files.map((file, index) => (
-                      <div key={index} className="message-file">
+                      <div key={index} className={`message-file ${getFilePreview(file) ? 'image-file' : 'non-image-file'}`}>
                         {getFilePreview(file) ? (
-                          <img src={getFilePreview(file)!} alt={file.name} className="message-file-thumbnail" />
+                          <>
+                            <img src={getFilePreview(file)!} alt={file.name} className="message-file-thumbnail" />
+                            <span className="message-file-name">{file.name}</span>
+                          </>
                         ) : (
-                          <div className="message-file-icon">{getFileIcon(file)}</div>
+                          <>
+                            <div className="message-file-icon">{getFileIcon(file)}</div>
+                            <span className="message-file-name">{file.name}</span>
+                          </>
                         )}
-                        <span className="message-file-name">{file.name}</span>
                       </div>
                     ))}
                   </div>
