@@ -61,7 +61,7 @@ function App() {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const trailIdRef = useRef<number>(0);
-  const dragCounterRef = useRef<number>(0);
+  const dragTimeoutRef = useRef<number | null>(null);
 
   // Generate random gradient function
   const generateRandomGradient = (darkMode: boolean = true) => {
@@ -171,6 +171,15 @@ function App() {
   // Show meme popup on first visit only
   useEffect(() => {
     setShowMemePopup(true);
+  }, []);
+
+  // Cleanup drag timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (dragTimeoutRef.current) {
+        clearTimeout(dragTimeoutRef.current);
+      }
+    };
   }, []);
 
   // Auto-scroll to bottom when new messages arrive
@@ -362,8 +371,15 @@ function App() {
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    dragCounterRef.current++;
-    if (dragCounterRef.current === 1) {
+
+    // Clear any existing timeout
+    if (dragTimeoutRef.current) {
+      clearTimeout(dragTimeoutRef.current);
+      dragTimeoutRef.current = null;
+    }
+
+    // Only activate if we have files being dragged
+    if (e.dataTransfer.types.includes('Files')) {
       setDragActive(true);
     }
   };
@@ -371,21 +387,33 @@ function App() {
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    dragCounterRef.current--;
-    if (dragCounterRef.current === 0) {
+
+    // Use a small timeout to prevent flickering when moving between child elements
+    dragTimeoutRef.current = window.setTimeout(() => {
       setDragActive(false);
-    }
+    }, 50);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // Clear timeout if we're still dragging over the area
+    if (dragTimeoutRef.current) {
+      clearTimeout(dragTimeoutRef.current);
+      dragTimeoutRef.current = null;
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    dragCounterRef.current = 0;
+
+    // Clear any timeout and immediately deactivate
+    if (dragTimeoutRef.current) {
+      clearTimeout(dragTimeoutRef.current);
+      dragTimeoutRef.current = null;
+    }
     setDragActive(false);
 
     const files = Array.from(e.dataTransfer.files);
@@ -534,7 +562,13 @@ function App() {
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="input-container">
+        <div
+          className="input-container"
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+        >
           {lastResponse && !isLoading && (
             <button
               className="make-harder-btn"
@@ -570,10 +604,6 @@ function App() {
 
           <div
             className={`input-box ${dragActive ? 'drag-active' : ''}`}
-            onDragEnter={handleDragEnter}
-            onDragLeave={handleDragLeave}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
           >
             <textarea
               value={inputText}
