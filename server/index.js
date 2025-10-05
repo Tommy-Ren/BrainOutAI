@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import multer from 'multer';
 import { GoogleGenAI } from "@google/genai";
 
 dotenv.config();
@@ -10,6 +11,14 @@ const PORT = process.env.PORT || 3001;
 
 // Initialize Gemini AI
 const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+});
 
 // Middleware
 app.use(cors());
@@ -39,7 +48,7 @@ Question: `;
 app.post('/api/chat', async (req, res) => {
   try {
     const { message } = req.body;
-    
+
     if (!message) {
       return res.status(400).json({ error: 'Message is required' });
     }
@@ -54,16 +63,16 @@ app.post('/api/chat', async (req, res) => {
     });
     const text = result.text;
 
-    res.json({ 
+    res.json({
       response: text,
       timestamp: new Date().toISOString()
     });
 
   } catch (error) {
     console.error('Error generating response:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to generate response',
-      details: error.message 
+      details: error.message
     });
   }
 });
@@ -72,7 +81,7 @@ app.post('/api/chat', async (req, res) => {
 app.post('/api/make-harder', async (req, res) => {
   try {
     const { originalQuestion, originalResponse } = req.body;
-    
+
     if (!originalQuestion || !originalResponse) {
       return res.status(400).json({ error: 'Original question and response are required' });
     }
@@ -90,16 +99,59 @@ Make this explanation even more ridiculously over-engineered while maintaining a
     });
     const text = result.text;
 
-    res.json({ 
+    res.json({
       response: text,
       timestamp: new Date().toISOString()
     });
 
   } catch (error) {
     console.error('Error generating harder response:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to generate harder response',
-      details: error.message 
+      details: error.message
+    });
+  }
+});
+
+// Chat with files endpoint
+app.post('/api/chat-with-files', upload.any(), async (req, res) => {
+  try {
+    const { message, fileCount } = req.body;
+    const files = req.files;
+
+    if (!message && (!files || files.length === 0)) {
+      return res.status(400).json({ error: 'Message or files are required' });
+    }
+
+    // Create prompt with file information
+    let fullPrompt = `${GRAND_PROMPT}\n\nUser Question: "${message || 'Please analyze these files'}"`;
+
+    if (files && files.length > 0) {
+      fullPrompt += `\n\nThe user has uploaded ${files.length} file(s):`;
+      files.forEach((file, index) => {
+        fullPrompt += `\n- File ${index + 1}: ${file.originalname} (${file.mimetype}, ${Math.round(file.size / 1024)}KB)`;
+      });
+      fullPrompt += `\n\nPlease provide an over-complicated analysis that references these files and their content where relevant.`;
+    }
+
+    // Generate response using Gemini
+    const response = await genAI.models.generateContent({
+      model: "gemini-2.5-flash-lite",
+      contents: fullPrompt,
+    });
+    const text = response.text;
+
+    res.json({
+      response: text,
+      timestamp: new Date().toISOString(),
+      filesProcessed: files ? files.length : 0
+    });
+
+  } catch (error) {
+    console.error('Error generating response with files:', error);
+    res.status(500).json({
+      error: 'Failed to generate response with files',
+      details: error.message
     });
   }
 });

@@ -255,6 +255,52 @@ body {
   word-wrap: break-word;
 }
 
+/* Message file styles */
+.message-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.message-file {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(78, 205, 196, 0.1);
+  border: 1px solid #4ecdc4;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.message-file-thumbnail {
+  width: 30px;
+  height: 30px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.message-file-icon {
+  font-size: 18px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(78, 205, 196, 0.2);
+  border-radius: 4px;
+}
+
+.message-file-name {
+  color: #4ecdc4;
+  font-weight: 500;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .copy-btn {
   position: absolute;
   top: -5px;
@@ -765,4 +811,18 @@ body {
 
 .light-mode .drag-message {
   color: #2c5aa0;
+}
+
+/* Light mode message file styles */
+.light-mode .message-file {
+  background: rgba(78, 205, 196, 0.2);
+  border: 1px solid #4ecdc4;
+}
+
+.light-mode .message-file-name {
+  color: #2c5aa0;
+}
+
+.light-mode .message-file-icon {
+  background: rgba(78, 205, 196, 0.3);
 }

@@ -6,6 +6,7 @@ interface Message {
   text: string;
   isUser: boolean;
   timestamp: string;
+  files?: File[];
 }
 
 interface MemePopupProps {
@@ -177,27 +178,47 @@ function App() {
   }, [messages]);
 
   const sendMessage = async () => {
-    if (!inputText.trim() || isLoading) return;
+    if ((!inputText.trim() && uploadedFiles.length === 0) || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
-      text: inputText,
+      text: inputText || (uploadedFiles.length > 0 ? `Uploaded ${uploadedFiles.length} file(s)` : ''),
       isUser: true,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      files: uploadedFiles.length > 0 ? [...uploadedFiles] : undefined
     };
 
     setMessages(prev => [...prev, userMessage]);
     setInputText('');
+    setUploadedFiles([]);
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ message: inputText }),
-      });
+      let response;
+
+      if (userMessage.files && userMessage.files.length > 0) {
+        // Handle file upload with FormData
+        const formData = new FormData();
+        formData.append('message', inputText || 'Please analyze these files');
+        userMessage.files.forEach((file, index) => {
+          formData.append(`file${index}`, file);
+        });
+        formData.append('fileCount', userMessage.files.length.toString());
+
+        response = await fetch('/api/chat-with-files', {
+          method: 'POST',
+          body: formData,
+        });
+      } else {
+        // Handle text-only message
+        response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ message: inputText }),
+        });
+      }
 
       if (!response.ok) {
         throw new Error('Failed to get response');
@@ -346,7 +367,10 @@ function App() {
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setDragActive(false);
+    // Only set dragActive to false if we're leaving the main container
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setDragActive(false);
+    }
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -453,6 +477,20 @@ function App() {
           {messages.map((message) => (
             <div key={message.id} className={`message ${message.isUser ? 'user' : 'ai'}`}>
               <div className="message-content">
+                {message.files && message.files.length > 0 && (
+                  <div className="message-files">
+                    {message.files.map((file, index) => (
+                      <div key={index} className="message-file">
+                        {getFilePreview(file) ? (
+                          <img src={getFilePreview(file)!} alt={file.name} className="message-file-thumbnail" />
+                        ) : (
+                          <div className="message-file-icon">{getFileIcon(file)}</div>
+                        )}
+                        <span className="message-file-name">{file.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <div className="message-text">{message.text}</div>
                 {!message.isUser && (
                   <button
@@ -537,7 +575,7 @@ function App() {
             />
             <button
               onClick={sendMessage}
-              disabled={!inputText.trim() || isLoading}
+              disabled={(!inputText.trim() && uploadedFiles.length === 0) || isLoading}
               className="send-btn"
             >
               →
