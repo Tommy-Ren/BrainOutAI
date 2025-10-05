@@ -76,6 +76,11 @@ function App() {
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [dragStartY, setDragStartY] = useState<number>(0);
   const [panelOffset, setPanelOffset] = useState<number>(0);
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<BlobPart[]>([]);
+  const micStreamRef = useRef<MediaStream | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const trailIdRef = useRef<number>(0);
   const dragTimeoutRef = useRef<number | null>(null);
@@ -710,6 +715,64 @@ function App() {
     return '📎';
   };
 
+  const toggleRecording = async () => {
+    if (isRecording) {
+      // Stop
+      mediaRecorderRef.current?.stop();
+      // stream tracks will be stopped in onstop()
+      return;
+    }
+
+    try {
+      // Ask for the mic
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      micStreamRef.current = stream;
+
+      // Pick a safe mime type
+      const mime =
+        MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+          ? 'audio/webm;codecs=opus'
+          : MediaRecorder.isTypeSupported('audio/webm')
+            ? 'audio/webm'
+            : 'audio/ogg'; // Safari fallback (no iOS recording support for MediaRecorder)
+
+      const mr = new MediaRecorder(stream, { mimeType: mime });
+      mediaRecorderRef.current = mr;
+
+      audioChunksRef.current = [];
+
+      mr.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mr.onstop = () => {
+        // build the final blob
+        const blob = new Blob(audioChunksRef.current, { type: mr.mimeType });
+        setAudioBlob(blob);
+
+        // fully release mic
+        micStreamRef.current?.getTracks().forEach((t) => t.stop());
+        micStreamRef.current = null;
+
+        setIsRecording(false);
+      };
+
+      mr.start();        // start recording
+      setIsRecording(true);
+    } catch (err) {
+      console.error('Mic error:', err);
+      alert('Please allow microphone access to record audio.');
+      setIsRecording(false);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      mediaRecorderRef.current?.state === 'recording' && mediaRecorderRef.current.stop();
+      micStreamRef.current?.getTracks().forEach((t) => t.stop());
+    };
+  }, []);
+
   return (
     <div className={`app ${isDarkMode ? 'dark-mode' : 'light-mode'}`} style={{ background: backgroundGradient }}>
       {/* Cursor trails */}
@@ -1020,11 +1083,29 @@ function App() {
               rows={1}
             />
             <button
+              onClick={toggleRecording}
+              aria-pressed={isRecording}
+              aria-label={isRecording ? 'Stop recording' : 'Start recording'}
+              title={isRecording ? 'Stop recording' : 'Record voice'}
+              disabled={isLoading}
+              className="mic-btn"
+            >
+              <img
+                src={isRecording ? './public/record-btn.png' : './public/mic-btn.png'}  
+                alt={isRecording ? '■' : '🎤'}
+                className="mic-icon"
+              />
+            </button>
+            <button
               onClick={sendMessage}
               disabled={(!inputText.trim() && uploadedFiles.length === 0) || isLoading}
               className="send-btn"
             >
-              →
+              <img
+                src="./public/send-btn.png"
+                alt="→"
+                className="send-icon"
+              />
             </button>
           </div>
 

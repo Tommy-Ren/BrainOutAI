@@ -474,15 +474,16 @@ body {
 
 .input-box textarea:focus {
   outline: none;
-  border-color: #4ecdc4;
+  border-color: #444;
 }
 
 .input-box textarea::placeholder {
   color: #666;
 }
 
+.mic-btn,
 .send-btn {
-  background: #4ecdc4;
+  background: #333;
   color: #000;
   border: none;
   border-radius: 8px;
@@ -498,17 +499,27 @@ body {
   justify-content: center;
 }
 
+.mic-btn:hover:not(:disabled),
 .send-btn:hover:not(:disabled) {
-  background: #45b7d1;
+  background: #333;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(78, 205, 196, 0.3);
 }
 
+.mic-btn:disabled,
 .send-btn:disabled {
   background: #333;
   cursor: not-allowed;
   opacity: 0.5;
   color: #666;
+}
+
+.mic-icon,
+.send-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  transition: transform 0.2s ease, filter 0.2s ease;
 }
 
 /* Meme Popup Styles */
@@ -723,18 +734,22 @@ body {
 }
 
 /* Light mode send button styles */
-.light-mode .send-btn {
-  background: #4ecdc4;
-  color: #fff;
+.light-mode .send-btn, 
+.light-mode .mic-btn {
+  background: #ddd;
+  color: #999;
   border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.light-mode .send-btn:hover:not(:disabled) {
-  background: #45b7d1;
-  box-shadow: 0 4px 12px rgba(69, 183, 209, 0.3);
+.light-mode .send-btn:hover:not(:disabled),
+.light-mode .mic-btn:hover:not(:disabled) {
+  background: #ddd;
+  color: #999;
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.light-mode .send-btn:disabled {
+.light-mode .send-btn:disabled,
+.light-mode .mic-btn:disabled {
   background: #ddd;
   color: #999;
   border: 1px solid rgba(0, 0, 0, 0.1);
