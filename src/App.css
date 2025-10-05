@@ -16,10 +16,70 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;      
+  height: 100vh;
   width: 100vw;
   padding: 20px;
   background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+/* Mode toggle button */
+.mode-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  cursor: pointer;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  z-index: 1000;
+}
+
+.mode-toggle:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+/* Cursor trails */
+.cursor-trail {
+  position: fixed;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  animation: trailFade 0.8s ease-out forwards;
+}
+
+.dark-trail {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.light-trail {
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.4) 50%, transparent 100%);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes trailFade {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
 }
 
 .chat-container {
@@ -118,14 +178,38 @@ body {
 }
 
 .example-questions li {
-  padding: 8px 0;
+  padding: 12px 16px;
   color: #888;
   cursor: pointer;
-  transition: color 0.2s;
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  margin: 8px 0;
+  background: rgba(42, 42, 42, 0.5);
+  border: 1px solid transparent;
 }
 
-.example-questions li:hover {
+.example-questions li:hover,
+.clickable-question:hover {
   color: #4ecdc4;
+  background: rgba(78, 205, 196, 0.1);
+  border-color: #4ecdc4;
+  transform: translateX(5px);
+}
+
+.clickable-question {
+  user-select: none;
+  position: relative;
+}
+
+.clickable-question::before {
+  content: "💡";
+  margin-right: 8px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.clickable-question:hover::before {
+  opacity: 1;
 }
 
 .message {
@@ -171,15 +255,17 @@ body {
   position: absolute;
   top: -5px;
   right: -5px;
-  background: #444;
+  background: rgba(68, 68, 68, 0.9);
   border: none;
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
+  border-radius: 4px;
+  padding: 4px 8px;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.2s;
-  font-size: 12px;
+  transition: all 0.2s;
+  font-size: 11px;
+  color: #fff;
+  font-weight: 500;
+  text-transform: lowercase;
 }
 
 .message.ai:hover .copy-btn {
@@ -187,7 +273,8 @@ body {
 }
 
 .copy-btn:hover {
-  background: #555;
+  background: rgba(85, 85, 85, 0.9);
+  transform: translateY(-1px);
 }
 
 .thinking-animation {
@@ -433,4 +520,208 @@ body {
   .meme-content {
     padding: 20px;
   }
+}
+
+/* Light mode styles */
+.light-mode {
+  color: #333 !important;
+}
+
+.light-mode .chat-container {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: #333;
+}
+
+.light-mode .chat-header {
+  background: rgba(240, 240, 240, 0.9);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  color: #333;
+}
+
+.light-mode .chat-header p {
+  color: #666;
+}
+
+.light-mode .message.ai .message-content {
+  background: rgba(240, 240, 240, 0.8);
+  color: #333;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.light-mode .input-container {
+  background: rgba(240, 240, 240, 0.9);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.light-mode .input-box textarea {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  color: #333;
+}
+
+.light-mode .input-box textarea::placeholder {
+  color: #999;
+}
+
+.light-mode .welcome-message {
+  color: #666;
+}
+
+.light-mode .welcome-message h2 {
+  color: #333;
+}
+
+.light-mode .example-questions li {
+  background: rgba(240, 240, 240, 0.5);
+  color: #666;
+}
+
+.light-mode .thinking-animation {
+  color: #666;
+}
+
+.light-mode .copy-btn {
+  background: rgba(221, 221, 221, 0.9);
+  color: #333;
+}
+
+.light-mode .copy-btn:hover {
+  background: rgba(204, 204, 204, 0.9);
+  transform: translateY(-1px);
+}
+
+/* File upload styles */
+.file-previews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 15px;
+  padding: 10px;
+  background: rgba(42, 42, 42, 0.3);
+  border-radius: 8px;
+  border: 1px solid #444;
+}
+
+.file-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(78, 205, 196, 0.1);
+  border: 1px solid #4ecdc4;
+  border-radius: 6px;
+  padding: 8px 12px;
+  position: relative;
+}
+
+.file-thumbnail {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.file-icon {
+  font-size: 24px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(78, 205, 196, 0.2);
+  border-radius: 4px;
+}
+
+.file-name {
+  font-size: 12px;
+  color: #ccc;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.remove-file-btn {
+  background: #ff6b6b;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.remove-file-btn:hover {
+  background: #ff5252;
+}
+
+.input-box.drag-active {
+  border-color: #4ecdc4 !important;
+  background: rgba(78, 205, 196, 0.1) !important;
+  transform: scale(1.02);
+}
+
+.drag-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(78, 205, 196, 0.1);
+  border: 2px dashed #4ecdc4;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  backdrop-filter: blur(5px);
+}
+
+.drag-message {
+  text-align: center;
+  color: #4ecdc4;
+}
+
+.drag-icon {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.drag-message p {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.drag-message small {
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+/* Light mode file upload styles */
+.light-mode .file-previews {
+  background: rgba(240, 240, 240, 0.5);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.light-mode .file-name {
+  color: #666;
+}
+
+.light-mode .file-icon {
+  background: rgba(78, 205, 196, 0.3);
+}
+
+.light-mode .drag-overlay {
+  background: rgba(78, 205, 196, 0.2);
+}
+
+.light-mode .drag-message {
+  color: #2c5aa0;
 }
